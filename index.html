@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic Tac Toe - BZOT9 Apps</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #282c34;
+            color: white;
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .game {
+            margin-bottom: 20px;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 80px);
+            gap: 5px;
+        }
+
+        .cell {
+            width: 80px;
+            height: 80px;
+            background-color: white;
+            border: 2px solid #444;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 30px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .cell.x::after {
+            content: 'X';
+            color: #ff6347;
+        }
+
+        .cell.o::after {
+            content: 'O';
+            color: #4682b4;
+        }
+
+        .cell:hover {
+            background-color: #ddd;
+        }
+
+        #playButton {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #61dafb;
+            border: none;
+            color: #282c34;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        #playButton:hover {
+            background-color: #21a1f1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><b>Tic Tac Toe <br> BZOT9 Apps</b></h1>
+        <p id="turnText">It's X's Turn (You)</p>
+        <div class="game">
+            <div class="board" id="board">
+                <div class="cell" data-cell></div>
+                <div class="cell" data-cell></div>
+                <div class="cell" data-cell></div>
+                <div class="cell" data-cell></div>
+                <div class="cell" data-cell></div>
+                <div class="cell" data-cell></div>
+                <div class="cell" data-cell></div>
+                <div class="cell" data-cell></div>
+                <div class="cell" data-cell></div>
+            </div>
+        </div>
+        <button id="playButton">Play Again</button>
+    </div>
+    <script>
+        const board = document.getElementById('board');
+        const cells = document.querySelectorAll('[data-cell]');
+        const playButton = document.getElementById('playButton');
+        const turnText = document.getElementById('turnText');
+        const X_CLASS = 'x';
+        const O_CLASS = 'o';
+        let oTurn;
+        let isMoving = false; // Biến kiểm tra xem có đang trong quá trình di chuyển hay không
+
+        const WINNING_COMBINATIONS = [
+            [0, 1, 2],
+            [3, 4, 5],
+            [6, 7, 8],
+            [0, 3, 6],
+            [1, 4, 7],
+            [2, 5, 8],
+            [0, 4, 8],
+            [2, 4, 6]
+        ];
+
+        startGame();
+
+        playButton.addEventListener('click', startGame);
+
+        function startGame() {
+            oTurn = false;
+            turnText.innerText = "It's X's Turn (You)";
+            cells.forEach(cell => {
+                cell.classList.remove(X_CLASS);
+                cell.classList.remove(O_CLASS);
+                cell.removeEventListener('click', handleClick);
+                cell.addEventListener('click', handleClick, { once: true });
+            });
+            setBoardHoverClass();
+        }
+
+        function handleClick(e) {
+            const cell = e.target;
+            if (isMoving || cell.classList.contains(X_CLASS) || cell.classList.contains(O_CLASS)) return; // Kiểm tra xem có đang trong quá trình di chuyển hoặc ô đã được đánh dấu chưa
+            const currentClass = oTurn ? O_CLASS : X_CLASS;
+            placeMark(cell, currentClass);
+            if (checkWin(currentClass)) {
+                endGame(false);
+            } else if (isDraw()) {
+                endGame(true);
+            } else {
+                swapTurns();
+                setBoardHoverClass();
+                if (oTurn) {
+                    isMoving = true; // Đánh dấu đang trong quá trình di chuyển
+                    setTimeout(computerMove, 500);
+                }
+            }
+        }
+
+        function endGame(draw) {
+            if (draw) {
+                turnText.innerText = "Draw!";
+            } else {
+                turnText.innerText = `${oTurn ? "O's (Bot)" : "X's (You)"} Wins!`;
+            }
+        }
+
+        function isDraw() {
+            return [...cells].every(cell => {
+                return cell.classList.contains(X_CLASS) || cell.classList.contains(O_CLASS);
+            });
+        }
+
+        function placeMark(cell, currentClass) {
+            cell.classList.add(currentClass);
+        }
+
+        function swapTurns() {
+            oTurn = !oTurn;
+            turnText.innerText = oTurn ? "It's O's Turn (Bot)" : "It's X's Turn (You)";
+        }
+
+        function setBoardHoverClass() {
+            board.classList.remove(X_CLASS);
+            board.classList.remove(O_CLASS);
+            if (oTurn) {
+                board.classList.add(O_CLASS);
+            } else {
+                board.classList.add(X_CLASS);
+            }
+        }
+
+        function checkWin(currentClass) {
+            return WINNING_COMBINATIONS.some(combination => {
+                return combination.every(index => {
+                    return cells[index].classList.contains(currentClass);
+                });
+            });
+        }
+
+        function computerMove() {
+            const availableCells = [...cells].filter(cell => !cell.classList.contains(X_CLASS) && !cell.classList.contains(O_CLASS));
+            if (availableCells.length === 0) return;
+            const randomCell = availableCells[Math.floor(Math.random() * availableCells.length)];
+            placeMark(randomCell, O_CLASS);
+            if (checkWin(O_CLASS)) {
+                endGame(false);
+            } else if (isDraw()) {
+                endGame(true);
+            } else {
+                swapTurns();
+                setBoardHoverClass();
+            }
+            isMoving = false;
+            }
+    </script>
+</body>
+</html>
